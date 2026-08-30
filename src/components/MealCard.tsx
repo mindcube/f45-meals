@@ -1,12 +1,12 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import { useShoppingList } from "@/app/contexts/ShoppingListContext";
 import Image from "next/image";
-import { Clock, Heart, Users } from "lucide-react";
+import { Check, Clock, Heart, Plus, Users } from "lucide-react";
 import { Meal } from "@/app/types/meal";
 import { useFavorites } from "@/app/hooks/useFavorites";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface MealCardProps {
   meal: Meal;
@@ -16,9 +16,10 @@ export function MealCard({ meal }: MealCardProps) {
   const { selectedMeals, addMeal, removeMeal } = useShoppingList();
   const { isFavorite } = useFavorites();
   const isSelected = selectedMeals.some((m) => m.id === meal.id);
+  const recipeFavorite = meal.recipe?.id ? isFavorite(meal.recipe.id) : false;
 
-  const handleCheckboxClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (isSelected) {
       removeMeal(meal.id);
     } else {
@@ -28,96 +29,83 @@ export function MealCard({ meal }: MealCardProps) {
         recipeId: meal.recipe?.id,
         defaultServings: meal.recipe?.serves || 1,
         requestedServings: meal.recipe?.serves || 1,
+        leftover: meal.leftover,
       });
     }
   };
 
   return (
-    <Link href={`/recipe/${meal.recipe?.id}`}>
-      <Card className="overflow-hidden hover:bg-gray-50 cursor-pointer transition-colors group">
-        <div className="relative">
-          <div
-            className="absolute top-3 left-3 z-10"
-            onClick={handleCheckboxClick}
-          >
-            <div
-              className={`
-              w-6 h-6 rounded-full
-              flex items-center justify-center
-              transition-colors
-              ${
-                isSelected
-                  ? "bg-primary"
-                  : "bg-white border-2 border-gray-200 group-hover:border-primary"
-              }
-            `}
-            >
-              {isSelected && (
-                <svg
-                  className="w-4 h-4 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              )}
-            </div>
-          </div>
+    <Link
+      href={`/recipe/${meal.recipe?.id}`}
+      className={cn(
+        "group flex gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition-colors active:bg-secondary/50",
+        isSelected ? "border-primary" : "border-border"
+      )}
+    >
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-secondary">
+        {meal.recipe?.feature_image?.url && (
+          <Image
+            src={meal.recipe.feature_image.url}
+            alt={meal.recipe.title || "Recipe image"}
+            fill
+            className="object-cover"
+            sizes="96px"
+          />
+        )}
+        {recipeFavorite && (
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-background/70 p-1">
+            <Heart className="h-3.5 w-3.5 text-primary" fill="currentColor" />
+          </span>
+        )}
+      </div>
 
-          {meal.recipe?.id && isFavorite(meal.recipe.id) && (
-            <div className="absolute top-3 right-3 z-10">
-              <Heart className="h-5 w-5 text-red-500" fill="currentColor" />
-            </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="mb-1 flex items-center gap-2">
+          <span className="truncate text-xs font-semibold uppercase tracking-wide text-primary">
+            {meal.meal_type?.title}
+          </span>
+          {meal.leftover && (
+            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              Leftover
+            </span>
           )}
-
-          <div className="flex flex-col sm:flex-row gap-4 p-4">
-            {meal.recipe?.feature_image?.url && (
-              <div className="relative w-24 h-24 flex-shrink-0">
-                <Image
-                  src={meal.recipe.feature_image.url}
-                  alt={meal.recipe.title || "Recipe image"}
-                  fill
-                  className="object-cover rounded-md"
-                  sizes="96px"
-                />
-              </div>
-            )}
-            <div className="flex-grow">
-              <h3 className="font-semibold">
-                {meal.recipe?.title || meal.title}
-              </h3>
-              <div className="text-sm text-gray-600 mt-1">
-                <div className="flex items-center gap-2">
-                  <span>{meal.meal_type?.title}</span>
-                  {meal.leftover && (
-                    <span className="text-blue-600 text-xs bg-blue-50 px-2 py-0.5 rounded-full">
-                      Leftover
-                    </span>
-                  )}
-                </div>
-              </div>
-              {meal.recipe && (
-                <div className="flex gap-4 mt-2 text-xs text-gray-600">
-                  <div className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {meal.recipe.cook_time_in_minutes} mins
-                  </div>
-                  <div className="flex items-center">
-                    <Users className="h-3 w-3 mr-1" />
-                    Serves {meal.recipe.serves}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
-      </Card>
+
+        <h3 className="line-clamp-2 font-semibold leading-tight">
+          {meal.recipe?.title || meal.title}
+        </h3>
+
+        {meal.recipe && (
+          <div className="mt-auto flex items-center gap-4 pt-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              {meal.recipe.cook_time_in_minutes} min
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {meal.recipe.serves}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-label={isSelected ? "Remove from shopping list" : "Add to shopping list"}
+        className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full border-2 transition-colors",
+          isSelected
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border text-muted-foreground group-hover:border-primary"
+        )}
+      >
+        {isSelected ? (
+          <Check className="h-4 w-4" />
+        ) : (
+          <Plus className="h-4 w-4" />
+        )}
+      </button>
     </Link>
   );
 }

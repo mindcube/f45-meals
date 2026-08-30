@@ -1,11 +1,11 @@
 // app/page.tsx
-import { getMealPlan } from "@/lib/api";
+import { getMealPlan, getChallenges } from "@/lib/api";
 import MealPlanDisplay from "@/components/MealPlanDisplay";
 import { SearchProvider } from "@/components/SearchProvider";
 import { Suspense } from "react";
 
 interface PageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function Home({ searchParams }: PageProps) {
@@ -13,27 +13,28 @@ export default async function Home({ searchParams }: PageProps) {
   const challenge = searchParama.challenge;
   const challengeId = Number(challenge || 43);
 
-  try {
-    const mealPlan = await getMealPlan(challengeId);
-    return (
-      <main className="container mx-auto p-4">
-        <SearchProvider>
-          <Suspense fallback={<div>Loading...</div>}>
-            <MealPlanDisplay
-              initialData={mealPlan || null}
-              initialChallenge={challengeId}
-            />
-          </Suspense>
-        </SearchProvider>
-      </main>
-    );
-  } catch {
-    return (
-      <main className="container mx-auto p-4">
-        <SearchProvider>
-          <MealPlanDisplay initialData={null} initialChallenge={challengeId} />
-        </SearchProvider>
-      </main>
-    );
-  }
+  // Fetch challenges and meal plan in parallel
+  const [challenges, mealPlan] = await Promise.allSettled([
+    getChallenges(),
+    getMealPlan(challengeId),
+  ]);
+
+  // Extract challenges data with fallback
+  const challengesData =
+    challenges.status === "fulfilled" ? challenges.value : [];
+
+  // Extract meal plan data
+  const mealPlanData = mealPlan.status === "fulfilled" ? mealPlan.value : null;
+
+  return (
+    <SearchProvider>
+      <Suspense fallback={<div className="p-4 text-muted-foreground">Loading...</div>}>
+        <MealPlanDisplay
+          initialData={mealPlanData}
+          initialChallenge={challengeId}
+          challenges={challengesData}
+        />
+      </Suspense>
+    </SearchProvider>
+  );
 }
