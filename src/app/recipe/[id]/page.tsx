@@ -5,15 +5,17 @@ import { notFound } from "next/navigation";
 export default async function RecipePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
   try {
-    const recipe = await getRecipeDetails(parseInt(params.id));
+    const recipe = await getRecipeDetails(parseInt(id));
 
     return (
-      <main className="container mx-auto p-4">
+      <div className="p-4">
         <RecipeView recipe={recipe} />
-      </main>
+      </div>
     );
   } catch {
     notFound();

@@ -81,3 +81,13 @@ export interface RecipeData {
     };
   };
 }
+
+export interface Challenge {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  status: "ACTIVE" | "INACTIVE";
+  short_name?: string;
+  description?: string;
+}
