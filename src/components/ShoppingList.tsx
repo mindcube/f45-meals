@@ -14,7 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Minus, Plus, Share2, ShoppingCart, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { convertToOunces } from "../lib/utils";
-import { categorizeIngredient, CATEGORIES } from "../lib/ingredients";
+import {
+  categorizeIngredient,
+  CATEGORIES,
+  isNotForShopping,
+} from "../lib/ingredients";
 import { getRecipeDetails } from "../lib/api";
 import {
   Select,
@@ -127,9 +131,11 @@ export function ShoppingList() {
               id: number;
               amount: number;
               modifier?: string;
+              hide_from_shopping_list?: boolean | null;
               ingredient: {
                 id: number;
                 title: string;
+                ingredient_category?: number | null;
               } | null;
               ingredient_measurement: {
                 id: number;
@@ -137,7 +143,8 @@ export function ShoppingList() {
                 abbreviation: string;
               };
             }) => {
-              if (!ing.ingredient) return;
+              if (!ing.ingredient || ing.hide_from_shopping_list) return;
+              if (isNotForShopping(ing.ingredient.title || "")) return;
 
               const key =
                 ing.ingredient.title?.toLowerCase() || "unknown ingredient";
@@ -160,7 +167,8 @@ export function ShoppingList() {
                   unit: converted.unit,
                   recipes: [group.title],
                   category: categorizeIngredient(
-                    ing.ingredient.title || "Unknown"
+                    ing.ingredient.title || "Unknown",
+                    ing.ingredient.ingredient_category
                   ),
                 };
               }
